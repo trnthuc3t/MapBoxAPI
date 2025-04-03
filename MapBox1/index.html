@@ -1,0 +1,130 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Bản đồ Mapbox GL JS</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.0/mapbox-gl-directions.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.0/mapbox-gl-directions.css" type="text/css">
+    <script src="https://unpkg.com/@mapbox/mapbox-gl-language@1.0.0/dist/mapbox-gl-language.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+        #language-select {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <select id="language-select">
+        <option value="vi">Tiếng Việt</option>
+        <option value="en">English</option>
+    </select>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoidDN0aHVjdHJuIiwiYSI6ImNtOHBjZGxlNjA5dGQyaXB2M2piZmVqZHoifQ.VDUMazLkT0DmDQ_kEwO6_w';
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [105.85, 21.0],
+            zoom: 9
+        });
+
+        const startMarker = new mapboxgl.Marker({
+            color: "red",
+            draggable: true,
+            anchor: 'bottom'
+        })
+            .setLngLat([105.80235000265279, 21.028921406661702])
+            .addTo(map);
+
+        const endMarker = new mapboxgl.Marker({
+            color: "blue",
+            draggable: true,
+            anchor: 'bottom'
+        })
+            .setLngLat([105.85, 21.0])
+            .addTo(map);
+
+        map.addControl(new mapboxgl.NavigationControl({
+            showCompass: true,
+            showZoom: true
+        }));
+
+        map.addControl(new mapboxgl.FullscreenControl());
+
+        const directions = new MapboxDirections({
+            accessToken: mapboxgl.accessToken,
+            unit: 'metric',
+            profile: 'mapbox/driving',
+            interactive: false,
+            language: 'vi', 
+            controls: {
+                inputs: true,
+                instructions: true
+            }
+        });
+
+        map.addControl(directions, 'top-left');
+
+        map.on('load', () => {
+            directions.setOrigin([105.80235000265279, 21.028921406661702]);
+            directions.setDestination([105.85, 21.0]);
+            
+            const languageControl = new MapboxLanguage({ defaultLanguage: 'vi' });
+            map.addControl(languageControl);
+        });
+
+        startMarker.on('dragend', () => {
+            directions.setOrigin(startMarker.getLngLat());
+        });
+
+        endMarker.on('dragend', () => {
+            directions.setDestination(endMarker.getLngLat());
+        });
+
+        map.on('click', (e) => {
+            new mapboxgl.Marker({
+                color: 'green',
+                draggable: true
+            })
+                .setLngLat([e.lngLat.lng, e.lngLat.lat])
+                .addTo(map);
+        });
+
+        const languageSelect = document.getElementById('language-select');
+        languageSelect.addEventListener('change', (e) => {
+            const selectedLanguage = e.target.value;
+            
+            map.setStyle('mapbox://styles/mapbox/streets-v12');
+            map.once('style.load', () => {
+                const languageControl = new MapboxLanguage({ defaultLanguage: selectedLanguage });
+                map.addControl(languageControl);
+            });
+
+          
+            directions.setLanguage(selectedLanguage);
+
+            const origin = startMarker.getLngLat();
+            const destination = endMarker.getLngLat();
+            directions.setOrigin(origin);
+            directions.setDestination(destination);
+        });
+    </script>
+</body>
+</html>
